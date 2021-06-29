@@ -4,20 +4,26 @@
 #'to controls that maximizes number of matched disjoint pairs satisfying a
 #'given caliper.
 #'
-#'Qmatch is generic function, calls one of its methods.
+#'Qmatch is a generic function, calls one of its methods.
 #'
 #'@param x Numeric vector with the scores of treated and control objects,
-#'         or formula, or glm.
+#'           or formula, or glm.
 #'@param z If x is a numeric vector, z is a vector with 1 for treated objects
-#          and 0 for controls, otherwise z is a dummy argument.
+#            and 0 for controls, otherwise z is a dummy argument.
 #'@param caliper The caliper, i.e., the maximal distance allowed between
 #            the scores of matched treated and control object.
 #'@param controls The maximal number of controls matched to a single treated object
-#             (the minimal number is always 1 for the algorithm).
+#            (the minimal number is always 1 for the algorithm).
 #'@param data An optional data frame, list or environment for arguments x,z
 #'           and within.
 #'@param within Vector of factors dividing objects into groups.
-#'@param method Method for matching: "nno" (default) for optimized NNM or "qmatch".
+#'@param method Method for matching: "nno" (default) for nearest neighbor matching 
+#'           followed by optimal rematching, or "qmatch" for the method producing 
+#'           maximal number of pairs under the given caliper.
+#'@param m.order Matching order: "largest" for matching in descending order 
+#'           starting from largest values of the score, 
+#'           "smallest" for matching in ascending order starting from 
+#'           smallest values of the score.
 #'
 #'@return A qmatch object containing:
 #' @return\code{match.matrix}:   a \code{(controls+1)} columns matrix, each row containing the numbers
@@ -53,12 +59,13 @@
 #'@examples qmatch(c(1,1.1,2.5,1.5,0.2,2,0.5,2),c(0,1,0,1,0,1,0,1),0.5)
 
 qmatch <- function(x,
-                       z,
-                       caliper,
-                       controls=1L,
-                       data,
-                       within,
-                       method="nno")
+                   z,
+                   caliper,
+                   controls=1L,
+                   data,
+                   within,
+                   method="nno",
+                   m.order="largest")
 {
   if (missing(data)) {
     UseMethod("qmatch")
@@ -271,9 +278,9 @@ nnomatch_core <- function(scores.t,
 #                of match.matrix
 
 qmatch_core <- function(scores.t,
-                            scores.c,
-                            caliper,
-                            controls = 1L)
+                        scores.c,
+                        caliper,
+                        controls = 1L)
 {
   controls <- as.integer(controls)
   len.scores.c <- length(scores.c)
@@ -344,6 +351,7 @@ qmatch_core <- function(scores.t,
 #         vectors x,z and within.
 #   within: vector of factors for exact matching (stratification).
 #   method: method for matching: "nno" for optimized NNM or "qmatch".
+#   m.order: order of matching: begin from "largest" or from "smallest".
 #
 # Value: object of class qmatch containing:
 #   match.matrix: a (control+1) col matrix, each row containing the numbers
@@ -365,22 +373,28 @@ qmatch_core <- function(scores.t,
 #   total.pairs: the number of matched control objects, which is the
 #                number of non-NA elements in cols 2:(control+1)
 #                of match.matrix
-
+#' @export
 qmatch.numeric <- function(x,
-                               z,
-                               caliper,
-                               controls=1L,
-                               data,
-                               within,
-                               method)
+                           z,
+                           caliper,
+                           controls=1L,
+                           data,
+                           within,
+                           method="nno",
+                           m.order="largest")
 {
   controls <- as.integer(controls)
 
   if (controls < 1L) {
     stop("controls < 1")
   }
-  if(missing(caliper)){
+  if (missing(caliper)){
     stop("caliper is not declared")
+  }
+  
+  m.order <- tolower(m.order)
+  if ( ! (m.order %in% c("largest","smallest")) ) {
+    stop('m.order can only be "largest" or "smallest"')
   }
 
   if (missing(data)){
@@ -417,8 +431,13 @@ qmatch.numeric <- function(x,
       scores.t <- eval(substitute(x[z!=0L]),data) # unordered scores for treated
       scores.c <- eval(substitute(x[z==0L]),data) # unordered scores for controls
     }
-    perm.t <- order(scores.t, method = "radix")
-    perm.c <- order(scores.c, method = "radix")
+    
+    if (m.order == "largest") {
+      scores.t <- -scores.t
+      scores.c <- -scores.c
+    }
+    perm.t <- order(scores.t)
+    perm.c <- order(scores.c)
 
     scores.t <- scores.t[perm.t] # order scores for treated
     scores.c <- scores.c[perm.c] # order scores for controls
@@ -459,7 +478,7 @@ qmatch.numeric <- function(x,
       for (m in seq_along(fact)) {
         currselect <- which(within==fact[m])
         qm <- qmatch.numeric(x[currselect], z[currselect],
-            caliper, controls, method=method)
+            caliper, controls, method=method, m.order=m.order)
 
         if (qm$total.matches>0L) {
           match.matrix[total.matches + 1L:qm$total.matches,] <-
@@ -505,8 +524,13 @@ qmatch.numeric <- function(x,
         pos.c <- eval(substitute(which(z==0L&(within==fact[m]))),data)
         scores.t <- eval(substitute(x[z!=0L&(within==fact[m])]),data) # unordered scores for treated
         scores.c <- eval(substitute(x[z==0L&(within==fact[m])]),data) # unordered scores for controls
-        perm.t <- order(scores.t, method = "radix")
-        perm.c <- order(scores.c, method = "radix")
+
+        if (m.order == "largest") {
+          scores.t <- -scores.t
+          scores.c <- -scores.c
+        }
+        perm.t <- order(scores.t)
+        perm.c <- order(scores.c)
 
         scores.t <- scores.t[perm.t] # order scores for treated
         scores.c <- scores.c[perm.c] # order scores for controls
@@ -571,6 +595,7 @@ qmatch.numeric <- function(x,
 #   data: an optional data frame, list or environment containing the
 #         vectors ax and az.
 #   method: method for matching: "nno" for optimized NNM or "qmatch".
+#   m.order: order of matching: begin from "largest" or from "smallest".
 #
 # Value: object of class qmatch containing:
 #   match.matrix: a (control+1) col matrix, each row containing the numbers
@@ -592,14 +617,15 @@ qmatch.numeric <- function(x,
 #   total.pairs: the number of matched control objects, which is the
 #                number of non-NA elements in cols 2:(control+1)
 #
-
+#' @export
 qmatch.formula <- function(x,
-                               z,
-                               caliper,
-                               controls=1L,
-                               data,
-                               within,
-                               method)
+                           z,
+                           caliper,
+                           controls=1L,
+                           data,
+                           within,
+                           method="nno",
+                           m.order="largest")
 {
   if (length(x)!=3L || x[[2]]==".") {
     stop("Formula must have a left hand side")
@@ -616,24 +642,25 @@ qmatch.formula <- function(x,
   # Below unclass() is needed when I() function is used in the formula.
   if (missing(within)) {
     if (missing(data)) {
-      ax <- eval(unclass(x[[3]]))
-      az <- eval(unclass(x[[2]]))
+      ax <- eval(unclass(x[[3]]), envir = parent.frame())
+      az <- eval(unclass(x[[2]]), envir = parent.frame())
     } else {
       ax <- eval(unclass(x[[3]]), data)
       az <- eval(unclass(x[[2]]), data)
     }
-    qmatch.numeric(ax,az,caliper,controls,method=method)
+    qmatch.numeric(ax,az,caliper,controls,method=method,m.order=m.order)
   } else {
     if (missing(data)) {
-      ax <- eval(unclass(x[[3]]))
-      az <- eval(unclass(x[[2]]))
+      ax <- eval(unclass(x[[3]]), envir = parent.frame())
+      az <- eval(unclass(x[[2]]), envir = parent.frame())
       awithin <- within
     } else {
       ax <- eval(unclass(x[[3]]), data)
       az <- eval(unclass(x[[2]]), data)
       awithin <- eval(substitute(within),data)
     }
-    qmatch.numeric(ax,az,caliper,controls,within=awithin,method=method)
+    qmatch.numeric(ax,az,caliper,controls,within=awithin,
+                   method=method,m.order=m.order)
   }
 }
 
@@ -654,6 +681,7 @@ qmatch.formula <- function(x,
 #             (the minimal number is always 1 for the algorithm).
 #   data: dummy argument.
 #   method: method for matching: "nno" for optimized NNM or "qmatch".
+#   m.order: order of matching: begin from "largest" or from "smallest".
 #
 # Value: object of class qmatch containing:
 #   match.matrix: a (control+1) col matrix, each row containing the numbers
@@ -675,24 +703,32 @@ qmatch.formula <- function(x,
 #   total.pairs: the number of matched control objects, which is the
 #                number of non-NA elements in cols 2:(control+1)
 #
+#' @export
 qmatch.glm <- function(x,z,
-                           caliper,
-                           controls=1L,
-                           data,
-                           within,
-                           method)
+                       caliper,
+                       controls=1L,
+                       data,
+                       within,
+                       method="nno",
+                       m.order="largest")
 {
   if (!missing(data)) {
     stop("The data argument cannot be used to specify the environment for glm")
   }
+  if (length(x$na.action) >= 1L) {
+    warning("There were missing values in the glm model. The resulting match.matrix will contain references to vectors with excluded missing values")
+  }
   if (missing(within)) {
-    qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,method=method)
+    qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,
+                   method=method,m.order=m.order)
   } else {
     qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,
-                       within = eval(substitute(within),x$data), method=method)
+                   within = eval(substitute(within),x$data), 
+                   method=method,m.order=m.order)
   }
 }
 
+#' @export
 qmatch.default <- function(x,...)
 {
   stop(paste0("Class \"",class(x),"\" is not supported for qmatch()"))

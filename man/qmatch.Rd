@@ -5,7 +5,16 @@
 \alias{qmatch}
 \title{Qmatch algorithm}
 \usage{
-qmatch(x, z, caliper, controls = 1L, data, within, method = "nno")
+qmatch(
+  x,
+  z,
+  caliper,
+  controls = 1L,
+  data,
+  within,
+  method = "nno",
+  m.order = "largest"
+)
 }
 \arguments{
 \item{x}{Numeric vector with the scores of treated and control objects,
@@ -22,7 +31,14 @@ and within.}
 
 \item{within}{Vector of factors dividing objects into groups.}
 
-\item{method}{Method for matching: "nno" (default) for optimized NNM or "qmatch".}
+\item{method}{Method for matching: "nno" (default) for nearest neighbor matching
+followed by optimal rematching, or "qmatch" for the method producing
+maximal number of pairs under the given caliper.}
+
+\item{m.order}{Matching order: "largest" for matching in descending order
+starting from largest values of the score,
+"smallest" for matching in ascending order starting from
+smallest values of the score.}
 }
 \value{
 A qmatch object containing:
@@ -58,7 +74,7 @@ to controls that maximizes number of matched disjoint pairs satisfying a
 given caliper.
 }
 \details{
-Qmatch is generic function, calls one of its methods.
+Qmatch is a generic function, calls one of its methods.
 }
 \examples{
 qmatch(c(1,1.1,2.5,1.5,0.2,2,0.5,2),c(0,1,0,1,0,1,0,1),0.5)
@@ -68,7 +84,5 @@ P.S. Ruzankin (2019). A fast algorithm for maximal propensity score matching.
 \emph{Methodol Comput Appl Probab}. \url{https://doi.org/10.1007/s11009-019-09718-4}
 }
 \author{
-Pavel S. Ruzankin
-
-Marina V. Muravleva
+Pavel S. Ruzankin, Marina V. Muravleva
 }
