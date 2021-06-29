@@ -1,8 +1,7 @@
 # Installation
 
-To install and use this package use following commands:
+To install this package use following command:
 
 ```R
-library(devtools)
-install_github("a-tarasenko/qmatch")
+devtools::install_github("a-tarasenko/qmatch")
 ```
