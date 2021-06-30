@@ -4,7 +4,15 @@
 #'to controls that maximizes number of matched disjoint pairs satisfying a
 #'given caliper.
 #'
-#'Qmatch is a generic function, calls one of its methods.
+#'The input data may be presented as numeric vector \code{x} of scores and
+#'vector \code{z} representing the comparison group.
+#'Observations where \code{z!=0} are assigned
+#'to the treatment group, the other observations being assigned to the control
+#'group. Besides, the \code{x} argument can be specified as a formula
+#'\code{group~score}. Or \code{x} may be a \code{glm} object,
+#'\code{fitted.values} of which are treated as scores and
+#'the dependent variable is treated as group.
+#'Limitation: long vectors are not supported in this version.
 #'
 #'@param x Numeric vector with the scores of treated and control objects,
 #'           or formula, or glm.
@@ -17,15 +25,15 @@
 #'@param data An optional data frame, list or environment for arguments x,z
 #'           and within.
 #'@param within Vector of factors dividing objects into groups.
-#'@param method Method for matching: "nno" (default) for nearest neighbor matching 
-#'           followed by optimal rematching, or "qmatch" for the method producing 
+#'@param method Method for matching: "nno" (default) for nearest neighbor matching
+#'           followed by optimal rematching, or "qmatch" for the method producing
 #'           maximal number of pairs under the given caliper.
-#'@param m.order Matching order: "largest" for matching in descending order 
-#'           starting from largest values of the score, 
-#'           "smallest" for matching in ascending order starting from 
+#'@param m.order Matching order: "largest" for matching in descending order
+#'           starting from largest values of the score,
+#'           "smallest" for matching in ascending order starting from
 #'           smallest values of the score.
 #'
-#'@return A qmatch object containing:
+#'@return A \code{qmatch} object containing:
 #' @return\code{match.matrix}:   a \code{(controls+1)} columns matrix, each row containing the numbers
 #'                 of a matched treated (in col 1) and corresponding
 #'                 control (in columnss \code{2:(controls+1))} objects. The numbers
@@ -49,7 +57,7 @@
 #'@author Pavel S. Ruzankin, Marina V. Muravleva
 #'
 #'@references
-#' P.S. Ruzankin (2019). A fast algorithm for maximal propensity score matching.
+#' P.S. Ruzankin (2020) A fast algorithm for maximal propensity score matching.
 #' \emph{Methodol Comput Appl Probab}. \url{https://doi.org/10.1007/s11009-019-09718-4}
 #'
 #'
@@ -58,14 +66,7 @@
 #'@rdname qmatch
 #'@examples qmatch(c(1,1.1,2.5,1.5,0.2,2,0.5,2),c(0,1,0,1,0,1,0,1),0.5)
 
-qmatch <- function(x,
-                   z,
-                   caliper,
-                   controls=1L,
-                   data,
-                   within,
-                   method="nno",
-                   m.order="largest")
+qmatch <- function(x, z, caliper, controls = 1, data, within, method = "nno", m.order = "largest")
 {
   if (missing(data)) {
     UseMethod("qmatch")
@@ -391,7 +392,7 @@ qmatch.numeric <- function(x,
   if (missing(caliper)){
     stop("caliper is not declared")
   }
-  
+
   m.order <- tolower(m.order)
   if ( ! (m.order %in% c("largest","smallest")) ) {
     stop('m.order can only be "largest" or "smallest"')
@@ -431,7 +432,7 @@ qmatch.numeric <- function(x,
       scores.t <- eval(substitute(x[z!=0L]),data) # unordered scores for treated
       scores.c <- eval(substitute(x[z==0L]),data) # unordered scores for controls
     }
-    
+
     if (m.order == "largest") {
       scores.t <- -scores.t
       scores.c <- -scores.c
@@ -723,7 +724,7 @@ qmatch.glm <- function(x,z,
                    method=method,m.order=m.order)
   } else {
     qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,
-                   within = eval(substitute(within),x$data), 
+                   within = eval(substitute(within),x$data),
                    method=method,m.order=m.order)
   }
 }
