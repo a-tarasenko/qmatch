@@ -9,7 +9,7 @@ qmatch(
   x,
   z,
   caliper,
-  controls = 1L,
+  controls = 1,
   data,
   within,
   method = "nno",
@@ -41,7 +41,7 @@ starting from largest values of the score,
 smallest values of the score.}
 }
 \value{
-A qmatch object containing:
+A \code{qmatch} object containing:
 
 \code{match.matrix}:   a \code{(controls+1)} columns matrix, each row containing the numbers
 of a matched treated (in col 1) and corresponding
@@ -74,13 +74,21 @@ to controls that maximizes number of matched disjoint pairs satisfying a
 given caliper.
 }
 \details{
-Qmatch is a generic function, calls one of its methods.
+The input data may be presented as numeric vector \code{x} of scores and
+vector \code{z} representing the comparison group.
+Observations where \code{z!=0} are assigned
+to the treatment group, the other observations being assigned to the control
+group. Besides, the \code{x} argument can be specified as a formula
+\code{group~score}. Or \code{x} may be a \code{glm} object,
+\code{fitted.values} of which are treated as scores and
+the dependent variable is treated as group.
+Limitation: long vectors are not supported in this version.
 }
 \examples{
 qmatch(c(1,1.1,2.5,1.5,0.2,2,0.5,2),c(0,1,0,1,0,1,0,1),0.5)
 }
 \references{
-P.S. Ruzankin (2019). A fast algorithm for maximal propensity score matching.
+P.S. Ruzankin (2020) A fast algorithm for maximal propensity score matching.
 \emph{Methodol Comput Appl Probab}. \url{https://doi.org/10.1007/s11009-019-09718-4}
 }
 \author{
