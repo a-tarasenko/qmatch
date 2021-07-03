@@ -4,15 +4,15 @@
 #'to controls that maximizes number of matched disjoint pairs satisfying a
 #'given caliper.
 #'
-#'The input data may be presented as numeric vector \code{x} of scores and
-#'vector \code{z} representing the comparison group.
-#'Observations where \code{z!=0} are assigned
-#'to the treatment group, the other observations being assigned to the control
-#'group. Besides, the \code{x} argument can be specified as a formula
-#'\code{group~score}. Or \code{x} may be a \code{glm} object,
-#'\code{fitted.values} of which are treated as scores and
+#'The input data may be presented as numeric vector \code{x} of scores and 
+#'vector \code{z} representing the comparison group. 
+#'Observations where \code{z!=0} are assigned 
+#'to the treatment group, the other observations being assigned to the control 
+#'group. Besides, the \code{x} argument can be specified as a formula 
+#'\code{group~score}. Or \code{x} may be a \code{glm} object, 
+#'\code{fitted.values} of which are treated as scores and 
 #'the dependent variable is treated as group.
-#'Limitation: long vectors are not supported in this version.
+#'
 #'
 #'@param x Numeric vector with the scores of treated and control objects,
 #'           or formula, or glm.
@@ -25,12 +25,12 @@
 #'@param data An optional data frame, list or environment for arguments x,z
 #'           and within.
 #'@param within Vector of factors dividing objects into groups.
-#'@param method Method for matching: "nno" (default) for nearest neighbor matching
-#'           followed by optimal rematching, or "qmatch" for the method producing
+#'@param method Method for matching: "nno" (default) for nearest neighbor matching 
+#'           followed by optimal rematching, or "qmatch" for the method producing 
 #'           maximal number of pairs under the given caliper.
-#'@param m.order Matching order: "largest" for matching in descending order
-#'           starting from largest values of the score,
-#'           "smallest" for matching in ascending order starting from
+#'@param m.order Matching order: "largest" for matching in descending order 
+#'           starting from largest values of the score, 
+#'           "smallest" for matching in ascending order starting from 
 #'           smallest values of the score.
 #'
 #'@return A \code{qmatch} object containing:
@@ -72,8 +72,8 @@ qmatch <- function(x, z, caliper, controls = 1, data, within, method = "nno", m.
     UseMethod("qmatch")
   } else {
     classvar <- vector()
-    class(classvar) <- eval(substitute(class(x)),data)
-    UseMethod("qmatch",classvar)
+    class(classvar) <- eval(substitute(class(x)), data)
+    UseMethod("qmatch", classvar)
   }
 }
 
@@ -118,102 +118,102 @@ nnomatch_core <- function(scores.t,
   controls <- as.integer(controls)
   len.scores.c <- length(scores.c)
   len.scores.t <- length(scores.t)
-  match.matrix <- matrix(as.numeric(NA), nrow = len.scores.t, ncol = 1L+controls)
-  discarded.t <- numeric(len.scores.t)
-  discarded.c <- numeric(len.scores.c)
+  type.scores <- typeof(max(len.scores.c,len.scores.t))
+  # as.vector() is usually more efficient than as(); it does not matter here
+  match.matrix <- matrix(as.vector(NA, mode = type.scores), 
+                         nrow = len.scores.t, ncol = 1L + controls)
+  discarded.t <- vector(mode = type.scores, len.scores.t)
+  discarded.c <- vector(mode = type.scores, len.scores.c)
   num_pairs <- integer(len.scores.t)
-  total.pairs <- 0 # current number of matched controls (of pairs)
-  total.matches <- 0 # current number of matched treated
-
+  total.pairs <- as.vector(0L, mode = type.scores)  # current number of matched controls (of pairs)
+  total.matches <- as.vector(0L, mode = type.scores) # current number of matched treated
 
   match.matrix[,1L]=seq_len(len.scores.t)
 
-
-
   # The first element of the right pointers vector is the pointer from outer space
   # Therefore always add 1 to the index!!!
-  pointr.c <- c(seq_along(scores.c),0)
+  pointr.c <- c(seq_along(scores.c), 0L)
 
   # The last element of the left pointers vector is the pointer from outer space
-  pointl.c <- 0:length(scores.c)
+  pointl.c <- 0L:length(scores.c)
 
 
   for (control in seq_len(controls)) {
 
-    curc <- pointr.c[1]
-    m <- 0 #Number of matches for this control number
-    #Vectors for temporary storage of matched pairs for each control nnumber
-    match.t <- numeric(len.scores.t)
-    match.c <- numeric(len.scores.t)
+    cur.c <- pointr.c[1L]
+    m <- as.vector(0L, mode = type.scores) # Number of matches (matched treated) for this control number iteration
+    # Vectors for temporary storage of matched pairs for each control number
+    match.t <- vector(mode = type.scores, len.scores.t)
+    match.c <- vector(mode = type.scores, len.scores.t)
 
-    for (curt in seq_along(scores.t)) {
+    for (cur.t in seq_along(scores.t)) {
 
       #First, pass as many controls as needed
-      while (curc != 0 && scores.c[curc]<scores.t[curt]) {
-        curc <- pointr.c[curc+1]
+      while (cur.c != 0L && scores.c[cur.c]<scores.t[cur.t]) {
+        cur.c <- pointr.c[cur.c + 1L]
       }
 
-      if (curc != 0) {
-        prevc=pointl.c[curc]
-        if (prevc != 0 ) {
+      if (cur.c != 0L) {
+        prev.c=pointl.c[cur.c]
+        if (prev.c != 0L ) {
           #Select the nearest control and check the caliper
-          if (scores.t[curt]-scores.c[prevc] >
-              scores.c[curc]-scores.t[curt]) {
-            if (scores.c[curc]-scores.t[curt] <= caliper) {
-              m <- m+1
-              match.t[m] <- curt
-              match.c[m] <- curc
-              nextc <- pointr.c[curc+1]
-              pointr.c[prevc+1] <- nextc
-              if (nextc != 0) {
-                pointl.c[nextc] <- prevc
+          if (scores.t[cur.t] - scores.c[prev.c] >
+              scores.c[cur.c] - scores.t[cur.t]) {
+            if (scores.c[cur.c] - scores.t[cur.t] <= caliper) {
+              m <- m + 1L
+              match.t[m] <- cur.t
+              match.c[m] <- cur.c
+              next.c <- pointr.c[cur.c + 1L]
+              pointr.c[prev.c + 1L] <- next.c
+              if (next.c != 0L) {
+                pointl.c[next.c] <- prev.c
               } else {
-                pointl.c[len.scores.c+1] <- prevc
+                pointl.c[len.scores.c + 1L] <- prev.c
               }
-              curc <- nextc
+              cur.c <- next.c
             }
           } else {
-            if (scores.t[curt]-scores.c[prevc] <=  caliper) {
-              m <- m+1
-              match.t[m] <- curt
-              match.c[m] <- prevc
-              prevprevc=pointl.c[prevc]
-              pointr.c[prevprevc+1] <- curc
-              pointl.c[curc] <- prevprevc
+            if (scores.t[cur.t] - scores.c[prev.c] <=  caliper) {
+              m <- m + 1L
+              match.t[m] <- cur.t
+              match.c[m] <- prev.c
+              prevprev.c=pointl.c[prev.c]
+              pointr.c[prevprev.c + 1L] <- cur.c
+              pointl.c[cur.c] <- prevprev.c
             }
           }
-        } else { # prevc == 0
-          if (scores.c[curc]-scores.t[curt] <= caliper) {
-            m <- m+1
-            match.t[m] <- curt
-            match.c[m] <- curc
-            nextc <- pointr.c[curc+1]
-            pointr.c[prevc+1] <- nextc
-            if (nextc != 0) {
-              pointl.c[nextc] <- prevc
+        } else { # prev.c == 0
+          if (scores.c[cur.c] - scores.t[cur.t] <= caliper) {
+            m <- m + 1L
+            match.t[m] <- cur.t
+            match.c[m] <- cur.c
+            next.c <- pointr.c[cur.c + 1L]
+            pointr.c[prev.c + 1L] <- next.c
+            if (next.c != 0L) {
+              pointl.c[next.c] <- prev.c
             } else {
-              pointl.c[len.scores.c+1] <- prevc
+              pointl.c[len.scores.c + 1L] <- prev.c
             }
-            curc <- nextc
+            cur.c <- next.c
           }
         }
-      } else { # curc == 0
-        prevc <- pointl.c[len.scores.c+1]
-        if (prevc != 0) {
-          if (scores.t[curt]-scores.c[prevc] <=  caliper) {
-            m <- m+1
-            match.t[m] <- curt
-            match.c[m] <- prevc
-            prevprevc=pointl.c[prevc]
-            pointr.c[prevprevc+1] <- curc
-            pointl.c[len.scores.c+1] <- prevprevc
+      } else { # cur.c == 0
+        prev.c <- pointl.c[len.scores.c + 1L]
+        if (prev.c != 0L) {
+          if (scores.t[cur.t] - scores.c[prev.c] <=  caliper) {
+            m <- m + 1L
+            match.t[m] <- cur.t
+            match.c[m] <- prev.c
+            prevprev.c=pointl.c[prev.c]
+            pointr.c[prevprev.c + 1L] <- cur.c
+            pointl.c[len.scores.c + 1L] <- prevprev.c
           }
         }
       }
 
     }
 
-    if (m==0) break
+    if (m == 0L) break
 
     total.pairs <- total.pairs + m
 
@@ -223,21 +223,21 @@ nnomatch_core <- function(scores.t,
     match.c <- head(match.c,m)
     match.c <- match.c[order(scores.c[match.c])] # Optimal rematching
 
-    match.matrix[match.t,1L+control] <- match.c
+    match.matrix[match.t, 1L+control] <- match.c
 
   }
 
   selectrows <- num_pairs > 0L
   discarded.t <- which(!selectrows)
 
-  match.matrix <- matrix(match.matrix[selectrows,],ncol=1L+controls)
+  match.matrix <- matrix(match.matrix[selectrows,], ncol = 1L + controls)
   # matrix() used to hadle cases with one or no rows selected
 
   num_pairs <- num_pairs[selectrows]
   total.matches <- length(num_pairs)
 
   selcontrols <- rep(TRUE,len.scores.c)
-  selcontrols[as.vector(match.matrix[,2L:(1L+controls)])] <- FALSE
+  selcontrols[as.vector(match.matrix[, 2L:(1L+controls)])] <- FALSE
   discarded.c <- which(selcontrols)
 
   list(match.matrix = match.matrix, num_pairs = num_pairs,
@@ -286,14 +286,16 @@ qmatch_core <- function(scores.t,
   controls <- as.integer(controls)
   len.scores.c <- length(scores.c)
   len.scores.t <- length(scores.t)
-  match.matrix <- matrix(as.integer(NA), nrow = len.scores.t, ncol = 1L+controls)
-  discarded.t <- integer(len.scores.t)
-  discarded.c <- integer(len.scores.c)
+  type.scores <- typeof(max(len.scores.c,len.scores.t))
+  match.matrix <- matrix(as.vector(NA, mode = type.scores), 
+                         nrow = len.scores.t, ncol = 1L + controls)
+  discarded.t <- vector(mode = type.scores, len.scores.t)
+  discarded.c <- vector(mode = type.scores, len.scores.c)
   num_pairs <- integer(len.scores.t)
-  total.pairs <- 0L # current number of matched controls (of pairs)
-  total.matches <- 0L # current number of matched treated
-  i <- 1L # current control object
-  j <- 1L # current treated object
+  total.pairs <- as.vector(0L, mode = type.scores) # current number of matched controls (of pairs)
+  total.matches <- as.vector(0L, mode = type.scores) # current number of matched treated
+  i <- as.vector(1L, mode = type.scores) # current control object
+  j <- as.vector(1L, mode = type.scores) # current treated object
   k <- 0L # current number of controls matched to the current treated
   while (i <= len.scores.c && j <= len.scores.t) {
     if (abs(scores.c[i] - scores.t[j]) <= caliper) {
@@ -392,7 +394,7 @@ qmatch.numeric <- function(x,
   if (missing(caliper)){
     stop("caliper is not declared")
   }
-
+  
   m.order <- tolower(m.order)
   if ( ! (m.order %in% c("largest","smallest")) ) {
     stop('m.order can only be "largest" or "smallest"')
@@ -427,12 +429,12 @@ qmatch.numeric <- function(x,
       scores.t <- x[pos.t] # unordered scores for treated
       scores.c <- x[pos.c] # unordered scores for controls
     } else {
-      pos.t <- eval(substitute(which(z!=0L)),data)
-      pos.c <- eval(substitute(which(z==0L)),data)
-      scores.t <- eval(substitute(x[z!=0L]),data) # unordered scores for treated
-      scores.c <- eval(substitute(x[z==0L]),data) # unordered scores for controls
+      pos.t <- eval(substitute(which(z!=0L)), data)
+      pos.c <- eval(substitute(which(z==0L)), data)
+      scores.t <- eval(substitute(x[z!=0L]), data) # unordered scores for treated
+      scores.c <- eval(substitute(x[z==0L]), data) # unordered scores for controls
     }
-
+    
     if (m.order == "largest") {
       scores.t <- -scores.t
       scores.c <- -scores.c
@@ -461,39 +463,41 @@ qmatch.numeric <- function(x,
     qm
   } else { #if (missing(within))
     if (missing(data)){
-      if (length(within)!=length(z)) {
+      if (length(within) != length(z)) {
         stop("lengths of within and z differ")
       }
 
       fact <- unique(within)
-      match.matrix <- matrix(as.integer(NA), nrow =length(x),
-          ncol = 1L+controls)
-      discarded.t <- integer(length(x))
-      discarded.c <- integer(length(x))
+      type.scores <- typeof(length(x))
+      match.matrix <- matrix(as.vector(NA, mode = type.scores), 
+                             nrow =length(x),
+                             ncol = 1L+controls)
+      discarded.t <- vector(mode = type.scores, length(x))
+      discarded.c <- vector(mode = type.scores, length(x))
       num_pairs <- integer(length(x))
-      total.pairs <- 0L
-      total.matches <- 0L
-      total.discarded.t <- 0L
-      total.discarded.c <- 0L
+      total.pairs <- as.vector(0L, mode = type.scores)
+      total.matches <- as.vector(0L, mode = type.scores)
+      total.discarded.t <- as.vector(0L, mode = type.scores)
+      total.discarded.c <- as.vector(0L, mode = type.scores)
 
       for (m in seq_along(fact)) {
         currselect <- which(within==fact[m])
         qm <- qmatch.numeric(x[currselect], z[currselect],
             caliper, controls, method=method, m.order=m.order)
 
-        if (qm$total.matches>0L) {
+        if (qm$total.matches > 0L) {
           match.matrix[total.matches + 1L:qm$total.matches,] <-
               currselect[qm$match.matrix]
           num_pairs[total.matches + 1L:qm$total.matches] <- qm$num_pairs
         }
         total.matches <- total.matches + qm$total.matches
         total.pairs <- total.pairs +  qm$total.pairs
-        if (length(qm$discarded.c)>0L) {
+        if (length(qm$discarded.c) > 0L) {
           discarded.c[total.discarded.c + seq_along(qm$discarded.c)] <-
               currselect[qm$discarded.c]
           total.discarded.c <- total.discarded.c + length(qm$discarded.c)
         }
-        if (length(qm$discarded.t)>0L) {
+        if (length(qm$discarded.t) > 0L) {
           discarded.t[total.discarded.t + seq_along(qm$discarded.t)] <-
               currselect[qm$discarded.t]
           total.discarded.t <- total.discarded.t + length(qm$discarded.t)
@@ -506,25 +510,27 @@ qmatch.numeric <- function(x,
 
     } else { # if (missing(data))
 
-      if (eval(substitute(length(within)),data)!=eval(substitute(length(z)),data)) {
+      if (eval(substitute(length(within)),data) != eval(substitute(length(z)),data)) {
         stop("lengths of within and z differ")
       }
 
       fact <- unique(eval(substitute(within),data))
-      match.matrix <- matrix(as.integer(NA),
-          nrow =eval(substitute(length(x)),data), ncol = 1L+controls)
-      discarded.t <- integer(eval(substitute(length(x)),data))
-      discarded.c <- integer(eval(substitute(length(x)),data))
-      num_pairs <- integer(eval(substitute(length(x)),data))
-      total.pairs <- 0L
-      total.matches <- 0L
-      total.discarded.t <- 0L
-      total.discarded.c <- 0L
+      len.scores <- eval(substitute(length(x)),data)
+      type.scores <- typeof(len.scores)
+      match.matrix <- matrix(as.vector(NA, mode = type.scores),
+          nrow = len.scores, ncol = 1L+controls)
+      discarded.t <- vector(mode = type.scores, len.scores)
+      discarded.c <- vector(mode = type.scores, len.scores)
+      num_pairs <- integer(len.scores)
+      total.pairs <- as.vector(0L, mode = type.scores)
+      total.matches <- as.vector(0L, mode = type.scores)
+      total.discarded.t <- as.vector(0L, mode = type.scores)
+      total.discarded.c <- as.vector(0L, mode = type.scores)
       for (m in seq_along(fact)) {
-        pos.t <- eval(substitute(which(z!=0L&(within==fact[m]))),data)
-        pos.c <- eval(substitute(which(z==0L&(within==fact[m]))),data)
-        scores.t <- eval(substitute(x[z!=0L&(within==fact[m])]),data) # unordered scores for treated
-        scores.c <- eval(substitute(x[z==0L&(within==fact[m])]),data) # unordered scores for controls
+        pos.t <- eval(substitute(which(z!=0L&(within==fact[m]))), data)
+        pos.c <- eval(substitute(which(z==0L&(within==fact[m]))), data)
+        scores.t <- eval(substitute(x[z!=0L&(within==fact[m])]), data) # unordered scores for treated
+        scores.c <- eval(substitute(x[z==0L&(within==fact[m])]), data) # unordered scores for controls
 
         if (m.order == "largest") {
           scores.t <- -scores.t
@@ -536,9 +542,9 @@ qmatch.numeric <- function(x,
         scores.t <- scores.t[perm.t] # order scores for treated
         scores.c <- scores.c[perm.c] # order scores for controls
 
-        if (tolower(method)=="qmatch") {
+        if (tolower(method) == "qmatch") {
           qm <- qmatch_core(scores.t, scores.c, caliper, controls)
-        } else if (tolower(method)=="nno") {
+        } else if (tolower(method) == "nno") {
           qm <- nnomatch_core(scores.t, scores.c, caliper, controls)
         } else {
           stop(paste0("Wrong method ",method))
@@ -582,7 +588,7 @@ qmatch.numeric <- function(x,
 }
 
 # qmatch.formula: decomposes the formula
-#                     and calls qmatch.numeric function
+#                 and calls qmatch.numeric function
 #
 # Arguments:
 #   x: formula of the form az~ax, where ax is the vector with the scores
@@ -622,22 +628,22 @@ qmatch.numeric <- function(x,
 qmatch.formula <- function(x,
                            z,
                            caliper,
-                           controls=1L,
+                           controls = 1L,
                            data,
                            within,
-                           method="nno",
-                           m.order="largest")
+                           method = "nno",
+                           m.order = "largest")
 {
-  if (length(x)!=3L || x[[2]]==".") {
+  if (length(x) != 3L || x[[2]] == ".") {
     stop("Formula must have a left hand side")
   }
-  if (x[[3]]==".") {
+  if (x[[3]] == ".") {
     stop("Formula must have a right hand side")
   }
-  if (length(x[[2]])>2L) {
+  if (length(x[[2]]) > 2L) {
     stop("Left part of the formula is complex")
   }
-  if (length(x[[3]])>2L) {
+  if (length(x[[3]]) > 2L) {
     stop("Right part of the formula is complex")
   }
   # Below unclass() is needed when I() function is used in the formula.
@@ -649,7 +655,8 @@ qmatch.formula <- function(x,
       ax <- eval(unclass(x[[3]]), data)
       az <- eval(unclass(x[[2]]), data)
     }
-    qmatch.numeric(ax,az,caliper,controls,method=method,m.order=m.order)
+    qmatch.numeric(ax, az, caliper, controls, 
+                   method = method, m.order = m.order)
   } else {
     if (missing(data)) {
       ax <- eval(unclass(x[[3]]), envir = parent.frame())
@@ -658,10 +665,10 @@ qmatch.formula <- function(x,
     } else {
       ax <- eval(unclass(x[[3]]), data)
       az <- eval(unclass(x[[2]]), data)
-      awithin <- eval(substitute(within),data)
+      awithin <- eval(substitute(within), data)
     }
-    qmatch.numeric(ax,az,caliper,controls,within=awithin,
-                   method=method,m.order=m.order)
+    qmatch.numeric(ax, az, caliper, controls, within=awithin,
+                   method = method, m.order = m.order)
   }
 }
 
@@ -707,11 +714,11 @@ qmatch.formula <- function(x,
 #' @export
 qmatch.glm <- function(x,z,
                        caliper,
-                       controls=1L,
+                       controls = 1L,
                        data,
                        within,
-                       method="nno",
-                       m.order="largest")
+                       method = "nno",
+                       m.order = "largest")
 {
   if (!missing(data)) {
     stop("The data argument cannot be used to specify the environment for glm")
@@ -720,19 +727,17 @@ qmatch.glm <- function(x,z,
     warning("There were missing values in the glm model. The resulting match.matrix will contain references to vectors with excluded missing values")
   }
   if (missing(within)) {
-    qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,
-                   method=method,m.order=m.order)
+    qmatch.numeric(x$fitted.values, x$model[,1], caliper, controls,
+                   method = method, m.order = m.order)
   } else {
-    qmatch.numeric(x$fitted.values,x$model[,1],caliper,controls,
-                   within = eval(substitute(within),x$data),
-                   method=method,m.order=m.order)
+    qmatch.numeric(x$fitted.values, x$model[,1], caliper, controls,
+                   within = eval(substitute(within),x$data), 
+                   method = method, m.order = m.order)
   }
 }
 
 #' @export
-qmatch.default <- function(x,...)
+qmatch.default <- function(x, ...)
 {
-  stop(paste0("Class \"",class(x),"\" is not supported for qmatch()"))
+  stop(paste0("Class \"", class(x), "\" is not supported for qmatch()"))
 }
-
-
