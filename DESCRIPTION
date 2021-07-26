@@ -1,6 +1,6 @@
 Package: qmatch
 Title: Quick Matching on a Scalar Index
-Version: 0.1.0.0
+Version: 0.2.0
 Authors@R: 
     person(given = "First",
            family = "Last",
