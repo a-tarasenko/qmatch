@@ -13,7 +13,10 @@ qmatch(
   data,
   within,
   method = "nno",
-  m.order = "largest"
+  m.order = "largest",
+  compute.weights = TRUE,
+  compute.cluster = TRUE,
+  compute.discarded = TRUE
 )
 }
 \arguments{
@@ -39,6 +42,13 @@ maximal number of pairs under the given caliper.}
 starting from largest values of the score,
 "smallest" for matching in ascending order starting from
 smallest values of the score.}
+
+\item{compute.weights}{Logical value indicating whether to compute weights.}
+
+\item{compute.cluster}{Logical value indicating whether to compute cluster IDs.}
+
+\item{compute.discarded}{Logical value indicating whether to compute
+numbers of discarded observations.}
 }
 \value{
 A \code{qmatch} object containing:
@@ -55,18 +65,29 @@ cols (k+2):(controls+1) are filled with integer NAs.
 controls matched to each treated object. \code{num_pairs[j]}
 corresponds to the j-th row of match.matrix.
 
-\code{discarded.t}:   vector of the numbers (positions in \code{x})
-of treated objects which are not matched.
-
-\code{discarded.c}:   vector of the numbers (positions in \code{x})
-of control objects which are not matched.
-
 \code{total.matches}:  the number of matched treated objects, which is the
 number of rows in match.matrix.
 
 \code{total.pairs}:   the number of matched control objects, which is the
 number of non-NA elements in columns \code{2:(controls+1)}
 of match.matrix
+
+\code{weights}:   Vector of weights of the observations.
+If an observation is not matched, then the corresponding element of
+\code{weights} is 0. If a treated observation is matched,
+then the corresponding element of \code{weights} is 1.
+If a control observation is matched, then the corresponding element of
+\code{weights} is 1 over the number of controls matched
+to the corresponding treated observation.
+
+\code{cluster}:   Vector of cluster IDs. Each cluster consists of
+a treated observation and all the control observations matched to
+the treated one.
+If an observation is not matched, then the corresponding element of
+\code{cluster} is NA.
+
+\code{discarded}:   Vector of the numbers (positions in \code{x})
+of observations that are not matched.
 }
 \description{
 Given treatment and control groups, finds a pairing of treatment units
@@ -82,7 +103,6 @@ group. Besides, the \code{x} argument can be specified as a formula
 \code{group~score}. Or \code{x} may be a \code{glm} object,
 \code{fitted.values} of which are treated as scores and
 the dependent variable is treated as group.
-Limitation: long vectors are not supported in this version.
 }
 \examples{
 qmatch(c(1,1.1,2.5,1.5,0.2,2,0.5,2),c(0,1,0,1,0,1,0,1),0.5)
