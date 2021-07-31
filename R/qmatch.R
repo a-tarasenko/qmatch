@@ -1,7 +1,8 @@
-#'Qmatch algorithm
-#'
-#'Given treatment and control groups, finds a pairing of treatment units
-#'to controls that maximizes number of matched disjoint pairs satisfying a
+#'Two algorithms for quick matching without replacement on a scalar index.
+#'The first algorithm is greedy nearest neighbor matching 
+#'followed by optimal rematching.
+#'The second algorithm finds a pairing of treatment units
+#'to controls that maximizes the number of matched pairs satisfying the
 #'given caliper.
 #'
 #'The input data may be presented as numeric vector \code{x} of scores and 
@@ -16,8 +17,9 @@
 #'
 #'@param x Numeric vector with the scores of treated and control objects,
 #'           or formula, or glm.
-#'@param z If x is a numeric vector, z is a vector with 1 for treated objects
-#            and 0 for controls, otherwise z is a dummy argument.
+#'@param z If \code{x} is a numeric vector, then \code{z} is a vector with nonzero 
+#'           vales for treated objects
+#            and zeros for controls, otherwise \code{z} is a dummy argument. 
 #'@param caliper The caliper, i.e., the maximal distance allowed between
 #            the scores of matched treated and control object.
 #'@param controls The maximal number of controls matched to a single treated object
@@ -154,7 +156,7 @@ nnomatch_core <- function(scores.t,
     m <- as.vector(0L, mode = type.scores) # Number of matches (matched treated) for this control number iteration
     # Vectors for temporary storage of matched pairs for each control number
     match.t <- vector(mode = type.scores, len.scores.t)
-    match.c <- vector(mode = type.scores, len.scores.t)
+    matched.c <- rep.int(FALSE, len.scores.c)
 
     for (cur.t in seq_along(scores.t)) {
 
@@ -172,7 +174,7 @@ nnomatch_core <- function(scores.t,
             if (scores.c[cur.c] - scores.t[cur.t] <= caliper) {
               m <- m + 1L
               match.t[m] <- cur.t
-              match.c[m] <- cur.c
+              matched.c[cur.c] <- TRUE
               next.c <- pointr.c[cur.c + 1L]
               pointr.c[prev.c + 1L] <- next.c
               if (next.c != 0L) {
@@ -186,7 +188,7 @@ nnomatch_core <- function(scores.t,
             if (scores.t[cur.t] - scores.c[prev.c] <=  caliper) {
               m <- m + 1L
               match.t[m] <- cur.t
-              match.c[m] <- prev.c
+              matched.c[prev.c] <- TRUE
               prevprev.c <- pointl.c[prev.c]
               pointr.c[prevprev.c + 1L] <- cur.c
               pointl.c[cur.c] <- prevprev.c
@@ -196,7 +198,7 @@ nnomatch_core <- function(scores.t,
           if (scores.c[cur.c] - scores.t[cur.t] <= caliper) {
             m <- m + 1L
             match.t[m] <- cur.t
-            match.c[m] <- cur.c
+            matched.c[cur.c] <- TRUE
             next.c <- pointr.c[cur.c + 1L]
             pointr.c[prev.c + 1L] <- next.c
             if (next.c != 0L) {
@@ -213,7 +215,7 @@ nnomatch_core <- function(scores.t,
           if (scores.t[cur.t] - scores.c[prev.c] <=  caliper) {
             m <- m + 1L
             match.t[m] <- cur.t
-            match.c[m] <- prev.c
+            matched.c[prev.c] <- TRUE
             prevprev.c <- pointl.c[prev.c]
             pointr.c[prevprev.c + 1L] <- cur.c
             pointl.c[len.scores.c + 1L] <- prevprev.c
@@ -227,13 +229,10 @@ nnomatch_core <- function(scores.t,
 
     total.pairs <- total.pairs + m
 
-    match.t <- head(match.t,m)
+    match.t <- head(match.t, m)
     num_pairs[match.t] <- num_pairs[match.t] + 1L
 
-    match.c <- head(match.c,m)
-    match.c <- match.c[order(scores.c[match.c])] # Optimal rematching
-
-    match.matrix[match.t, 1L + control] <- match.c
+    match.matrix[match.t, 1L + control] <- which(matched.c) # Optimal rematching
 
   }
 
