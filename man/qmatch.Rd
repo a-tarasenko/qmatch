@@ -3,7 +3,12 @@
 \docType{methods}
 \name{qmatch}
 \alias{qmatch}
-\title{Qmatch algorithm}
+\title{Two algorithms for quick matching without replacement on a scalar index.
+The first algorithm is greedy nearest neighbor matching
+followed by optimal rematching.
+The second algorithm finds a pairing of treatment units
+to controls that maximizes the number of matched pairs satisfying the
+given caliper.}
 \usage{
 qmatch(
   x,
@@ -23,7 +28,8 @@ qmatch(
 \item{x}{Numeric vector with the scores of treated and control objects,
 or formula, or glm.}
 
-\item{z}{If x is a numeric vector, z is a vector with 1 for treated objects}
+\item{z}{If \code{x} is a numeric vector, then \code{z} is a vector with nonzero
+vales for treated objects}
 
 \item{caliper}{The caliper, i.e., the maximal distance allowed between}
 
@@ -90,11 +96,6 @@ If an observation is not matched, then the corresponding element of
 of observations that are not matched.
 }
 \description{
-Given treatment and control groups, finds a pairing of treatment units
-to controls that maximizes number of matched disjoint pairs satisfying a
-given caliper.
-}
-\details{
 The input data may be presented as numeric vector \code{x} of scores and
 vector \code{z} representing the comparison group.
 Observations where \code{z!=0} are assigned
