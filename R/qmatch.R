@@ -1,9 +1,16 @@
-#'Two algorithms for quick matching without replacement on a scalar index.
-#'The first algorithm is greedy nearest neighbor matching 
-#'followed by optimal rematching.
-#'The second algorithm finds a pairing of treatment units
-#'to controls that maximizes the number of matched pairs satisfying the
-#'given caliper.
+#'Quick matching on a scalar index
+#'
+#'Two algorithms for quick matching without replacement on a scalar index. 
+#'The first algorithm (\code{method = "nno"}) is greedy nearest neighbor matching 
+#'followed by optimal rematching of the matched subjects. 
+#'The second algorithm (\code{method = "qmatch"}) finds 
+#'a pairing of treated subjects to control ones
+#'that maximizes the number of matched pairs satisfying the given caliper.
+#'Note that, in the case of one-to-many matching (\code{controls > 1}), 
+#'the second algorithm maximizes the number of matched control subjects,
+#'while the number matched of treated subjects is usually not optimal.
+#'Therefore, \code{method = "nno"}
+#'is recommended for one-to-many matching.
 #'
 #'The input data may be presented as numeric vector \code{x} of scores and 
 #'vector \code{z} representing the comparison group. 
