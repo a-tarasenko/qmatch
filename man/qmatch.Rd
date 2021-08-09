@@ -99,7 +99,7 @@ a pairing of treated subjects to control ones
 that maximizes the number of matched pairs satisfying the given caliper.
 Note that, in the case of one-to-many matching (\code{controls > 1}),
 the second algorithm maximizes the number of matched control subjects,
-while the number matched of treated subjects is usually not optimal.
+while the number of matched treated subjects is usually not optimal.
 Therefore, \code{method = "nno"}
 is recommended for one-to-many matching.
 }
